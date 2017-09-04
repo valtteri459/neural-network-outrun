@@ -172,6 +172,7 @@ for (var j = 0; j < popSize; j++) {
 var genNum = 1;
 //best fitness
 var bestFit = 0;
+var alive = popSize;
 
 
 
@@ -187,6 +188,7 @@ function setup(){
 	//low fps, adjust to make sim faster
 	frameRate(60);
 	noStroke();
+	document.getElementById("popSize").innerHTML = alive;
 }
 
 
@@ -243,6 +245,7 @@ function draw(){
 		    networks[j][0].importWeights(genetics.population[j].weights);
 		    networks[j][1] = new player(Math.floor(Math.random()*255),Math.floor(Math.random()*255),Math.floor(Math.random()*255));
 		}
+		alive = popSize;
 	}
 	//execute every member until death
 	for (var j = 0; j < popSize; j++) {
@@ -261,6 +264,8 @@ function draw(){
 				}
 			}
 			if(play.executeLocation() == false){
+				alive--;
+				document.getElementById("popSize").innerHTML = alive;
 				genetics.population[j].fitness = play.distanceTraveled;
 			}
 		}
