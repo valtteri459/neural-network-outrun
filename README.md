@@ -1,4 +1,4 @@
-#2d outrunner
+# 2d outrunner
 
 a 2d scrolling game where the object is to avoid oncoming obstacles by moving left or right
 
