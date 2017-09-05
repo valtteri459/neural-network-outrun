@@ -65,8 +65,17 @@ var fitHistory = [[],[]];
 
 
 //obstacles appear every X turns and the 2nd is just for counting how many rows have passed without obstacles
-var obstacleEvery = 5;
+
+//this is the base rate
+var obstacleEveryBase = 5;
+//this will decrease when the game gets further to make objects spawn more rapidly
+var obstacleEvery = obstacleEveryBase;
 var noObstacle = 0;
+
+
+//defines how fast the game gets harder
+var moreObjectsEvery = 2000;
+var increaseIntervalEvery = 4000;
 //calculate neural network inputs
 function calcInputs(player){
 	//array to be returned at the end
@@ -212,8 +221,15 @@ function draw(){
 
 	//only add a row of obstacles every X rows
 	if(noObstacle > obstacleEvery){
-		//only add one block per time
-		toAppend[Math.round(Math.random()*gridSizeHorisontal)-1] = 1;
+		//generate more obstacles over time, but cap at width-2 to always ensure at least a small gap
+		var objectAmount = Math.floor(score/moreObjectsEvery);
+		if(objectAmount > gridSizeHorisontal-2){
+			objectAmount = gridSizeHorisontal-2;
+		}
+		for(var i = 0;i<=objectAmount;i++)
+		{
+			toAppend[Math.round(Math.random()*gridSizeHorisontal)-1] = 1;
+		}
 		noObstacle = 0;
 	}else{
 		//increment no obstacles counter by 1
@@ -272,6 +288,9 @@ function draw(){
 		    networks[j][1] = new player(Math.floor(Math.random()*255),Math.floor(Math.random()*255),Math.floor(Math.random()*255));
 		}
 		alive = popSize;
+		//reset falling objects on restart
+		falling = [];
+		obstacleEvery = obstacleEveryBase;
 	}
 	document.getElementById("currentScore").innerHTML = score;
 	//execute every member until death
@@ -298,7 +317,14 @@ function draw(){
 		}
 	}
 	score++;
+	var lowerInterval = Math.floor(score/increaseIntervalEvery);
 
+	//ensure there's always a small gap
+	if(lowerInterval > obstacleEveryBase -2)
+	{
+		lowerInterval = obstacleEveryBase-2;
+	}
+	obstacleEvery = obstacleEvery-lowerInterval;
 }
 
 $(document).ready(function(){
