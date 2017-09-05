@@ -277,7 +277,7 @@ function draw(){
 			genetics.epoch(genetics.population);
 			fitHistory[1].push(genetics.bestFitness);
 			fitHistory[0].push("generation "+(genNum-1));
-			if(fitHistory.length > maxHistory){
+			if(fitHistory[0].length > maxHistory){
 				fitHistory[1].pop();
 				fitHistory[0].pop();
 			}
