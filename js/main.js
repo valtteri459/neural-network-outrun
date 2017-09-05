@@ -278,8 +278,8 @@ function draw(){
 			fitHistory[1].push(genetics.bestFitness);
 			fitHistory[0].push("generation "+(genNum-1));
 			if(fitHistory[0].length > maxHistory){
-				fitHistory[1].pop();
-				fitHistory[0].pop();
+				fitHistory[1].shift();
+				fitHistory[0].shift();
 			}
 			//draw history
 
