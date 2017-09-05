@@ -51,13 +51,17 @@ var gridSizeHorisontal = 10;
 
 var blockHeight = canvasHeight/gridSizeVertical;
 var blockWidth = canvasWidth/gridSizeHorisontal;
-
+//how many last gens are shown on the history
+var maxHistory = 50;
 
 
 
 
 //array for storing obstacles
 var falling = [];
+var fitHistory = [[],[]];
+
+
 
 
 //obstacles appear every X turns and the 2nd is just for counting how many rows have passed without obstacles
@@ -172,6 +176,8 @@ for (var j = 0; j < popSize; j++) {
 var genNum = 1;
 //best fitness
 var bestFit = 0;
+var bestFitGen = 0;
+var score = 0;
 var alive = popSize;
 
 
@@ -233,13 +239,33 @@ function draw(){
 	}
 	//do epoch if necessary
 	if(doEpoch){
+		score = 0;
 		genNum++;
+		//generate next generation
+		genetics.epoch(genetics.population);
+		fitHistory[1].push(genetics.bestFitness);
+		fitHistory[0].push("generation "+(genNum-1));
+		if(fitHistory.length > maxHistory){
+			fitHistory[1].pop();
+			fitHistory[0].pop();
+		}
+		//draw history
+
+		chart.data.labels = fitHistory[0];
+		chart.data.datasets[0].data = fitHistory[1];
+		chart.update(0);
+
+
+
 		if(genetics.bestFitness > bestFit){
 			bestFit = genetics.bestFitness;
+			bestFitGen = genNum-1;
 		}
+
+
 		document.getElementById("genNum").innerHTML = genNum;;
 		document.getElementById("bestFit").innerHTML = bestFit;
-		genetics.epoch(genetics.population);
+		document.getElementById("bestFitGen").innerHTML = bestFitGen;
 		for (var j = 0; j < popSize; j++) {
 			//import new genes
 		    networks[j][0].importWeights(genetics.population[j].weights);
@@ -247,6 +273,7 @@ function draw(){
 		}
 		alive = popSize;
 	}
+	document.getElementById("currentScore").innerHTML = score;
 	//execute every member until death
 	for (var j = 0; j < popSize; j++) {
 		net = networks[j][0];
@@ -270,14 +297,37 @@ function draw(){
 			}
 		}
 	}
+	score++;
 
 }
 
 $(document).ready(function(){
+	window.ctx = document.getElementById("historyGraph").getContext('2d');
+	chartData = {
+		labels : [],
+		datasets:[{
+			label: "maxFitness",
+			fillColor: "rgba(220,220,220,0.2)",
+            strokeColor: "rgba(220,220,220,1)",
+            pointColor: "rgba(220,220,220,1)",
+            pointStrokeColor: "#fff",
+            pointHighlightFill: "#fff",
+            pointHighlightStroke: "rgba(220,220,220,1)",
+			data: []
+		}]
+	};
+	window.chart = new Chart(ctx, {
+		type:"line",
+		data: chartData,
+		options: {}
+	});
 	$("#stop").click(function(){
 		noLoop();
 	});
 	$("#start").click(function(){
 		loop();
+	});
+	$( "#speedSlider" ).change(function() {
+    	frameRate(parseInt($(this).val()));
 	});
 });
