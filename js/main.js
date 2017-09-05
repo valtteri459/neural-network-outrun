@@ -340,7 +340,7 @@ function draw(){
 		{
 			lowerInterval = obstacleEveryBase-2;
 		}
-		obstacleEvery = obstacleEvery-lowerInterval;
+		obstacleEvery = obstacleEveryBase-lowerInterval;
 		skipDraw = true;
 	}
 }
