@@ -16,6 +16,7 @@
 	#gameCont{width:450px;height:900px;margin:0;padding:0;float:left;box-sizing:border-box;border:1px solid green;}
 	#statistics{width:450px;margin:0;padding:0;float:left;box-sizing:border-box;border:1px solid green;}
 	#speedSlider{width:100%;float:left;}
+	#stepSlider{width:100%;float:left;}
 	#historyWrapper{width:100%;float:left;overflow:hidden;background-color:white;}
 	#history{width:100%;float:left;height:224px;}
 	</style>
@@ -32,8 +33,10 @@
 			<h3>players alive: <span id="popSize">0</span></h3>
 			<h3>current score: <span id="currentScore">0</span></h3>
 			<hr/>
-			speed:
-			<input type="range" min="0" value="60" max="60" step="1" id="speedSlider" />
+			<span>speed:</span><br/>
+			<input type="range" min="0" value="60" max="60" step="1" id="speedSlider" /><br/>
+			<span>calculations per frame:</span><br/>
+			<input type="range" min="1" value="1" max="10" step="1" id="stepSlider" />
 			<hr/>
 			<div id="historyWrapper">
 				<canvas id="historyGraph">no support for canvas :/</canvas>

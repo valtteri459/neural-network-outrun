@@ -76,6 +76,9 @@ var noObstacle = 0;
 //defines how fast the game gets harder
 var moreObjectsEvery = 2000;
 var increaseIntervalEvery = 4000;
+
+//ability to skip frames for faster training
+var calcsPerFrame=1;
 //calculate neural network inputs
 function calcInputs(player){
 	//array to be returned at the end
@@ -112,12 +115,14 @@ function player(r,g,b){
 	this.distanceTraveled = 0;
 	this.isDead = false;
 	//ran every frame, tests if player crashed or passed
-	this.executeLocation = function(){
+	this.executeLocation = function(skipDraw){
 		obstacles = falling[gridSizeVertical-1];
 		if((obstacles === undefined || obstacles[this.location] != 1) && this.isDead == false)
 		{
-			fill(this.r,this.g,this.b);
-			rect(blockWidth*this.location, blockHeight*gridSizeVertical-blockHeight, blockWidth, blockHeight);
+			if(skipDraw == false){
+				fill(this.r,this.g,this.b);
+				rect(blockWidth*this.location, blockHeight*gridSizeVertical-blockHeight, blockWidth, blockHeight);
+			}
 			this.distanceTraveled++;
 			return true;
 		}else{
@@ -206,125 +211,138 @@ function setup(){
 	document.getElementById("popSize").innerHTML = alive;
 }
 
-
+var frameCount = 0;
 function draw(){
+
 	//remove old elements
 	background(0,0,0);
 	//set fill color for falling elements
 	fill(255,255,255);
-	//pop last one out if already max length
-	if(falling.length >= gridSizeVertical){
-		falling.pop();
-	}
-	//initialize a new row to append
-	toAppend = new Array(gridSizeHorisontal);
+	var skipDraw = false;
+	for(var l = 0;l < calcsPerFrame;l++){
+		//pop last one out if already max length
+		if(falling.length >= gridSizeVertical){
+			falling.pop();
+		}
+		//initialize a new row to append
+		toAppend = new Array(gridSizeHorisontal);
 
-	//only add a row of obstacles every X rows
-	if(noObstacle > obstacleEvery){
-		//generate more obstacles over time, but cap at width-2 to always ensure at least a small gap
-		var objectAmount = Math.floor(score/moreObjectsEvery);
-		if(objectAmount > gridSizeHorisontal-2){
-			objectAmount = gridSizeHorisontal-2;
-		}
-		for(var i = 0;i<=objectAmount;i++)
-		{
-			toAppend[Math.round(Math.random()*gridSizeHorisontal)-1] = 1;
-		}
-		noObstacle = 0;
-	}else{
-		//increment no obstacles counter by 1
-		noObstacle++;
-	}
-	//add new object to the falling array
-	falling.unshift(toAppend);
-	for(var i = 0;i<falling.length;i++){
-		for(var j =0;j<falling[i].length;j++){
-			if(falling[i][j] == 1){
-				rect(j*blockWidth,i*blockHeight, blockWidth, blockHeight);
+		//only add a row of obstacles every X rows
+		if(noObstacle > obstacleEvery){
+			//generate more obstacles over time, but cap at width-2 to always ensure at least a small gap
+			var objectAmount = Math.floor(score/moreObjectsEvery);
+			if(objectAmount > gridSizeHorisontal-2){
+				objectAmount = gridSizeHorisontal-2;
 			}
-			
+			for(var i = 0;i<=objectAmount;i++)
+			{
+				toAppend[Math.round(Math.random()*gridSizeHorisontal)-1] = 1;
+			}
+			noObstacle = 0;
+		}else{
+			//increment no obstacles counter by 1
+			noObstacle++;
 		}
-	}
-	//calculate neural networks and render associative players
-	//firstly check if anyone is still alive, if not do epoch
-	doEpoch = true;
-	for (var j = 0; j < popSize; j++) {
-	    if(networks[j][1].isDead == false){
-	    	doEpoch = false;
-	    }
-	}
-	//do epoch if necessary
-	if(doEpoch){
-		score = 0;
-		genNum++;
-		//generate next generation
-		genetics.epoch(genetics.population);
-		fitHistory[1].push(genetics.bestFitness);
-		fitHistory[0].push("generation "+(genNum-1));
-		if(fitHistory.length > maxHistory){
-			fitHistory[1].pop();
-			fitHistory[0].pop();
-		}
-		//draw history
+		//add new object to the falling array
+		falling.unshift(toAppend);
+		
 
-		chart.data.labels = fitHistory[0];
-		chart.data.datasets[0].data = fitHistory[1];
-		chart.update(0);
-
-
-
-		if(genetics.bestFitness > bestFit){
-			bestFit = genetics.bestFitness;
-			bestFitGen = genNum-1;
+		//draw obstacles
+		for(var i = 0;i<falling.length;i++){
+			for(var j =0;j<falling[i].length;j++){
+				if(falling[i][j] == 1){
+					if(skipDraw == false){
+						rect(j*blockWidth,i*blockHeight, blockWidth, blockHeight);
+					}
+				}
+				
+			}
 		}
 
 
-		document.getElementById("genNum").innerHTML = genNum;;
-		document.getElementById("bestFit").innerHTML = bestFit;
-		document.getElementById("bestFitGen").innerHTML = bestFitGen;
+
+		//calculate neural networks and render associative players
+		//firstly check if anyone is still alive, if not do epoch
+		doEpoch = true;
 		for (var j = 0; j < popSize; j++) {
-			//import new genes
-		    networks[j][0].importWeights(genetics.population[j].weights);
-		    networks[j][1] = new player(Math.floor(Math.random()*255),Math.floor(Math.random()*255),Math.floor(Math.random()*255));
+		    if(networks[j][1].isDead == false){
+		    	doEpoch = false;
+		    }
 		}
-		alive = popSize;
-		//reset falling objects on restart
-		falling = [];
-		obstacleEvery = obstacleEveryBase;
-	}
-	document.getElementById("currentScore").innerHTML = score;
-	//execute every member until death
-	for (var j = 0; j < popSize; j++) {
-		net = networks[j][0];
-		play = networks[j][1];
-		inputs = calcInputs(play);
-		if(play.isDead == false){
-			out = net.run(inputs);
-			outDir = indexOfMax(out);
-			outDirVal = out[outDir];
-			if(outDirVal > 0.5){
-				if(outDir == 0){
-					play.moveLeft();
-				}else{
-					play.moveRight();
+		//do epoch if necessary
+		if(doEpoch){
+			score = 0;
+			genNum++;
+			//generate next generation
+			genetics.epoch(genetics.population);
+			fitHistory[1].push(genetics.bestFitness);
+			fitHistory[0].push("generation "+(genNum-1));
+			if(fitHistory.length > maxHistory){
+				fitHistory[1].pop();
+				fitHistory[0].pop();
+			}
+			//draw history
+
+			chart.data.labels = fitHistory[0];
+			chart.data.datasets[0].data = fitHistory[1];
+			chart.update(0);
+
+
+
+			if(genetics.bestFitness > bestFit){
+				bestFit = genetics.bestFitness;
+				bestFitGen = genNum-1;
+			}
+
+
+			document.getElementById("genNum").innerHTML = genNum;;
+			document.getElementById("bestFit").innerHTML = bestFit;
+			document.getElementById("bestFitGen").innerHTML = bestFitGen;
+			for (var j = 0; j < popSize; j++) {
+				//import new genes
+			    networks[j][0].importWeights(genetics.population[j].weights);
+			    networks[j][1] = new player(Math.floor(Math.random()*255),Math.floor(Math.random()*255),Math.floor(Math.random()*255));
+			}
+			alive = popSize;
+			//reset falling objects on restart
+			falling = [];
+			obstacleEvery = obstacleEveryBase;
+		}
+		document.getElementById("currentScore").innerHTML = score;
+		//execute every member until death
+		for (var j = 0; j < popSize; j++) {
+			net = networks[j][0];
+			play = networks[j][1];
+			inputs = calcInputs(play);
+			if(play.isDead == false){
+				out = net.run(inputs);
+				outDir = indexOfMax(out);
+				outDirVal = out[outDir];
+				if(outDirVal > 0.5){
+					if(outDir == 0){
+						play.moveLeft();
+					}else{
+						play.moveRight();
+					}
+				}
+				if(play.executeLocation(skipDraw) == false){
+					alive--;
+					document.getElementById("popSize").innerHTML = alive;
+					genetics.population[j].fitness = play.distanceTraveled;
 				}
 			}
-			if(play.executeLocation() == false){
-				alive--;
-				document.getElementById("popSize").innerHTML = alive;
-				genetics.population[j].fitness = play.distanceTraveled;
-			}
 		}
-	}
-	score++;
-	var lowerInterval = Math.floor(score/increaseIntervalEvery);
+		score++;
+		var lowerInterval = Math.floor(score/increaseIntervalEvery);
 
-	//ensure there's always a small gap
-	if(lowerInterval > obstacleEveryBase -2)
-	{
-		lowerInterval = obstacleEveryBase-2;
+		//ensure there's always a small gap
+		if(lowerInterval > obstacleEveryBase -2)
+		{
+			lowerInterval = obstacleEveryBase-2;
+		}
+		obstacleEvery = obstacleEvery-lowerInterval;
+		skipDraw = true;
 	}
-	obstacleEvery = obstacleEvery-lowerInterval;
 }
 
 $(document).ready(function(){
@@ -355,5 +373,8 @@ $(document).ready(function(){
 	});
 	$( "#speedSlider" ).change(function() {
     	frameRate(parseInt($(this).val()));
+	});
+	$( "#stepSlider" ).change(function() {
+    	calcsPerFrame = parseInt($(this).val());
 	});
 });
