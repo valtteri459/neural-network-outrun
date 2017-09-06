@@ -36,7 +36,23 @@ function indexOfMax(arr) {
 }
 
 
-
+function download(data, filename, type) {
+    var file = new Blob([data], {type: type});
+    if (window.navigator.msSaveOrOpenBlob) // IE10+
+        window.navigator.msSaveOrOpenBlob(file, filename);
+    else { // Others
+        var a = document.createElement("a"),
+                url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);  
+        }, 0); 
+    }
+}
 
 
 
@@ -295,7 +311,7 @@ function draw(){
 			}
 
 
-			document.getElementById("genNum").innerHTML = genNum;;
+			document.getElementById("genNum").innerHTML = genNum;
 			document.getElementById("bestFit").innerHTML = bestFit;
 			document.getElementById("bestFitGen").innerHTML = bestFitGen;
 			for (var j = 0; j < popSize; j++) {
@@ -370,6 +386,43 @@ $(document).ready(function(){
 	});
 	$("#start").click(function(){
 		loop();
+	});
+
+	var f = new FileReader();
+	f.onload = function(event){
+		var loadedData = event.target.result;
+		try{
+			var imported = JSON.parse(loadedData);
+			genNum = imported.gen+1;
+			bestFitGen = imported.bestGen;
+			bestFit = imported.bestFit;
+			genetics.population = imported.genes;
+			for (var j = 0; j < popSize; j++) {
+			    networks[j][0].importWeights(genetics.population[j].weights);
+			}
+			document.getElementById("genNum").innerHTML = genNum;
+			document.getElementById("bestFit").innerHTML = bestFit;
+			document.getElementById("bestFitGen").innerHTML = bestFitGen;
+
+		}catch(e){
+			alert("file not json parseable");
+		}
+	};
+	$("#load").click(function(){
+		var fileArg = document.getElementById("loadFile").files[0];
+		f.readAsText(fileArg);
+		document.getElementById("loadFile").value = "";
+
+	});
+	$("#save").click(function(){
+		var saveout = {};
+		saveout.gen = genNum-1;
+		saveout.bestGen = bestFitGen;
+		saveout.bestFit = bestFit;
+		saveout.genes = genetics.population;
+		var outStr = JSON.stringify(saveout);
+		download(outStr, "savepoint-"+saveout["gen"]+".json", "text/json");
+
 	});
 	$( "#speedSlider" ).change(function() {
     	frameRate(parseInt($(this).val()));
