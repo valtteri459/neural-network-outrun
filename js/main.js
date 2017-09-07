@@ -75,7 +75,7 @@ var maxHistory = 50;
 
 //array for storing obstacles
 var falling = [];
-var fitHistory = [[],[]];
+var fitHistory = [[],[],[]];
 
 
 
@@ -291,14 +291,16 @@ function draw(){
 			genNum++;
 			//generate next generation
 			genetics.epoch(genetics.population);
+			fitHistory[2].push(genetics.averageFitness);
 			fitHistory[1].push(genetics.bestFitness);
 			fitHistory[0].push("generation "+(genNum-1));
 			if(fitHistory[0].length > maxHistory){
+			    fitHistory[2].shift();
 				fitHistory[1].shift();
 				fitHistory[0].shift();
 			}
 			//draw history
-
+            chart.data.datasets[1].data = fitHistory[2];
 			chart.data.labels = fitHistory[0];
 			chart.data.datasets[0].data = fitHistory[1];
 			chart.update(0);
@@ -373,6 +375,15 @@ $(document).ready(function(){
             pointStrokeColor: "#fff",
             pointHighlightFill: "#fff",
             pointHighlightStroke: "rgba(220,220,220,1)",
+			data: []
+		},{
+			label: "avgFitness",
+			fillColor: "#e91e63",
+            strokeColor: "#ec407a",
+            pointColor: "#f06292",
+            pointStrokeColor: "#fff",
+            pointHighlightFill: "#fff",
+            pointHighlightStroke: "#f48fb1",
 			data: []
 		}]
 	};
